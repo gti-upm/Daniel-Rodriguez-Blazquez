@@ -99,7 +99,7 @@ plt.title('Mel spectrogram')
 plt.tight_layout()
 
 # Example of Pop music
-y, sr = librosa.load('./fma_small/000/000010.mp3', duration=10)
+y, sr = librosa.load('./datasets/fma_small/000/000010.mp3', duration=10)
 ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
 ps.shape
 
@@ -112,7 +112,7 @@ plt.title('Mel spectrogram')
 plt.tight_layout()
 
 # Example of Rock music
-y, sr = librosa.load('./fma_small/000/000255.mp3', duration=10)
+y, sr = librosa.load('./datasets/fma_small/000/000255.mp3', duration=10)
 ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
 ps.shape
 
@@ -127,53 +127,53 @@ plt.tight_layout()
 rate = 0.8
 
 for row in data.itertuples():
-    y, sr = librosa.load(os.getcwd()+'/fma_small/' + row.path)
+    y, sr = librosa.load(os.getcwd()+'/datasets/fma_small/' + row.path)
     y_changed = librosa.effects.time_stretch(y, rate=rate)
-    str_tmp = os.getcwd()+'/fma_small_augmented/' + row.path
+    str_tmp = os.getcwd()+'/datasets/fma_small_augmented/' + row.path
     path, file = os.path.split(str_tmp)
     if not os.path.exists(path):
         os.makedirs(path)
-    librosa.output.write_wav(os.getcwd()+'/fma_small_augmented/' + row.path, y_changed, sr)
+    librosa.output.write_wav(os.getcwd()+'/datasets/fma_small_augmented/' + row.path, y_changed, sr)
 
 rate = 0.9
 
 for row in data.itertuples():
-    y, sr = librosa.load('./fma_small/' + row.path)
+    y, sr = librosa.load('./datasets/fma_small/' + row.path)
     y_changed = librosa.effects.time_stretch(y, rate=rate)
-    str_tmp = './fma_small_augmented2/' + row.path
+    str_tmp = './datasets/fma_small_augmented2/' + row.path
     path, file = os.path.split(str_tmp)
     if not os.path.exists(path):
         os.makedirs(path)
-    librosa.output.write_wav('./fma_small_augmented2/' + row.path, y_changed, sr)
+    librosa.output.write_wav('./datasets/fma_small_augmented2/' + row.path, y_changed, sr)
 
 n_steps = 2
 
 for row in data.itertuples():
-    y, sr = librosa.load('./fma_small/' + row.path)
+    y, sr = librosa.load('./datasets/fma_small/' + row.path)
     y_changed = librosa.effects.pitch_shift(y, sr, n_steps=n_steps)
-    str_tmp = './fma_small_augmented1/' + row.path
+    str_tmp = './datasets/fma_small_augmented1/' + row.path
     path, file = os.path.split(str_tmp)
     if not os.path.exists(path):
         os.makedirs(path)
-    librosa.output.write_wav('./fma_small_augmented1/' + row.path, y_changed, sr)
+    librosa.output.write_wav('./datasets/fma_small_augmented1/' + row.path, y_changed, sr)
 
 n_steps = -2
 
 for row in data.itertuples():
-    y, sr = librosa.load('./fma_small/' + row.path)
+    y, sr = librosa.load('./datasets/fma_small/' + row.path)
     y_changed = librosa.effects.pitch_shift(y, sr, n_steps=n_steps)
-    str_tmp = './fma_small_augmented3/' + row.path
+    str_tmp = './datasets/fma_small_augmented3/' + row.path
     path, file = os.path.split(str_tmp)
     if not os.path.exists(path):
         os.makedirs(path)
-    librosa.output.write_wav('./fma_small_augmented3/' + row.path, y_changed, sr)
+    librosa.output.write_wav('./datasets/fma_small_augmented3/' + row.path, y_changed, sr)
 
 n_steps = -2
 '''
 for row in data.itertuples():
-    y, sr = librosa.load('./fma_small/' + row.path)
+    y, sr = librosa.load('./datasets/fma_small/' + row.path)
     y_changed = librosa.effects.pitch_shift(y, sr, n_steps=n_steps)
-    librosa.output.write_wav('./fma_small_augmented3/' + row.path, y_changed, sr)    
+    librosa.output.write_wav('./datasets/fma_small_augmented3/' + row.path, y_changed, sr)    
 '''
 
 
@@ -186,7 +186,7 @@ plt.title('Mel spectrogram')
 plt.tight_layout()
 
 # Example of Rock music (time-stretch 0.8)
-y, sr = librosa.load('./fma_small_augmented/000/000002.mp3', duration=10)
+y, sr = librosa.load('./datasets/fma_small_augmented/000/000002.mp3', duration=10)
 ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
 ps.shape
 
@@ -199,7 +199,7 @@ plt.title('Mel spectrogram')
 plt.tight_layout()
 
 # Example of Rock music (pitch-shift 2)
-y, sr = librosa.load('./fma_small_augmented1/000/000002.mp3', duration=10)
+y, sr = librosa.load('./datasets/fma_small_augmented1/000/000002.mp3', duration=10)
 ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
 ps.shape
 
@@ -214,7 +214,7 @@ plt.tight_layout()
 D1 = []  # Dataset1
 
 for row in data.itertuples():
-    y, sr = librosa.load('./fma_small/' + row.path, duration=10)
+    y, sr = librosa.load('./datasets/fma_small/' + row.path, duration=10)
     ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
     if ps.shape != (128, 431): continue
     D1.append((ps, row.genre_number))
@@ -222,7 +222,7 @@ for row in data.itertuples():
 D2 = []  # Dataset2 (time stretch 0.8)
 
 for row in data.itertuples():
-    y, sr = librosa.load('./fma_small_augmented/' + row.path, duration=10)
+    y, sr = librosa.load('./datasets/fma_small_augmented/' + row.path, duration=10)
     ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
     if ps.shape != (128, 431): continue
     D2.append((ps, row.genre_number))
@@ -230,7 +230,7 @@ for row in data.itertuples():
 D3 = []  # Dataset3 (pitch shift 2)
 
 for row in data.itertuples():
-    y, sr = librosa.load('./fma_small_augmented1/' + row.path, duration=10)
+    y, sr = librosa.load('./datasets/fma_small_augmented1/' + row.path, duration=10)
     ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
     if ps.shape != (128, 431): continue
     D3.append((ps, row.genre_number))
@@ -238,14 +238,14 @@ for row in data.itertuples():
 D4 = []  # Dataset4 (time stretch 1.1)
 
 for row in data.itertuples():
-    y, sr = librosa.load('./fma_small_augmented2/' + row.path, duration=10)
+    y, sr = librosa.load('./datasets/fma_small_augmented2/' + row.path, duration=10)
     ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
     if ps.shape != (128, 431): continue
     D4.append((ps, row.genre_number))
 D5 = []  # Dataset5 (pitch shift -2)
 
 for row in data.itertuples():
-    y, sr = librosa.load('./fma_small_augmented3/' + row.path, duration=10)
+    y, sr = librosa.load('./datasets/fma_small_augmented3/' + row.path, duration=10)
     ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
     if ps.shape != (128, 431): continue
     D5.append((ps, row.genre_number))
@@ -372,7 +372,7 @@ data['path'].head(5)
 D = []  # test dataset
 
 for row in data.itertuples():
-    y, sr = librosa.load('./fma_small/000/' + row.path, duration=10)
+    y, sr = librosa.load('./datasets/fma_small/000/' + row.path, duration=10)
     ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
     if ps.shape != (128, 431): continue
     D.append((ps, row.genre_number))
