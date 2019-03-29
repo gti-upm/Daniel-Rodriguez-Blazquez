@@ -9,6 +9,7 @@ import keras.backend as K
 from keras.models import load_model
 from keras.callbacks import EarlyStopping
 import os
+import math
 
 # matplotlib inline
 import matplotlib.pyplot as plt
@@ -24,15 +25,19 @@ import warnings
 warnings.filterwarnings('ignore')
 
 from tensorflow.python.client import device_lib
-print(device_lib.list_local_devices())
+# print(device_lib.list_local_devices())
+
 
 # Read Data
 data = pd.read_csv('./music_analysis.csv')
 print(data.head(10))
 
 print(data.shape)
+print('------------------------')
 
 def folder_name(i):
+    return(str(math.floor(i/1000)))
+    '''
     if i < 18000:
         return '0'
     elif i >= 18000 and i < 41000:
@@ -53,6 +58,7 @@ def folder_name(i):
         return '8'
     else:
         return '9'
+    '''
 
 def genre_number(i):
     if i == 'Hip-Hop':
@@ -76,53 +82,57 @@ data['genre_number'] = data['genre'].apply(genre_number)
 data['folder_number'] = data['file_name'].apply(folder_name)
 
 data['file_name'] = data['file_name'].apply(lambda x: '{0:0>6}'.format(x))
-i=0
+
+i = 0
 for j in data['folder_number']:
     data['folder_number'][i] = j.zfill(3)
     i = i+1
 data['path'] = data['folder_number'].astype('str') + '/' + data['file_name'].astype('str') + ".mp3"
 data['path'].head(5)
 
+
+
 # Example of Hip-Hop music
-y, sr = librosa.load('./fma_small/000/000002.mp3', duration=10)
+y, sr = librosa.load('./datasets/fma_small/000/000002.mp3', duration=10)
 ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
-ps.shape
-
-ps
-
-# IPython.display.Audio(data=y, rate=sr)
+print(ps.shape)
+print(ps)
+print('------------------------')
 
 plt.figure(figsize=(10, 4))
 librosa.display.specshow(librosa.power_to_db(ps, ref=np.max), y_axis='mel', x_axis='time')
 plt.colorbar(format='%+2.0f dB')
 plt.title('Mel spectrogram')
 plt.tight_layout()
+
+
 
 # Example of Pop music
 y, sr = librosa.load('./datasets/fma_small/000/000010.mp3', duration=10)
 ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
-ps.shape
-
-# IPython.display.Audio(data=y, rate=sr)
+print(ps.shape)
+print('------------------------')
 
 plt.figure(figsize=(10, 4))
 librosa.display.specshow(librosa.power_to_db(ps, ref=np.max), y_axis='mel', x_axis='time')
 plt.colorbar(format='%+2.0f dB')
 plt.title('Mel spectrogram')
 plt.tight_layout()
+
+
 
 # Example of Rock music
 y, sr = librosa.load('./datasets/fma_small/000/000255.mp3', duration=10)
 ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
-ps.shape
-
-# IPython.display.Audio(data=y, rate=sr)
+print(ps.shape)
+print('------------------------')
 
 plt.figure(figsize=(10, 4))
 librosa.display.specshow(librosa.power_to_db(ps, ref=np.max), y_axis='mel', x_axis='time')
 plt.colorbar(format='%+2.0f dB')
 plt.title('Mel spectrogram')
 plt.tight_layout()
+
 
 rate = 0.8
 
@@ -134,6 +144,7 @@ for row in data.itertuples():
     if not os.path.exists(path):
         os.makedirs(path)
     librosa.output.write_wav(os.getcwd()+'/datasets/fma_small_augmented/' + row.path, y_changed, sr)
+
 
 rate = 0.9
 
@@ -169,6 +180,7 @@ for row in data.itertuples():
     librosa.output.write_wav('./datasets/fma_small_augmented3/' + row.path, y_changed, sr)
 
 n_steps = -2
+
 '''
 for row in data.itertuples():
     y, sr = librosa.load('./datasets/fma_small/' + row.path)
@@ -176,21 +188,18 @@ for row in data.itertuples():
     librosa.output.write_wav('./datasets/fma_small_augmented3/' + row.path, y_changed, sr)    
 '''
 
-
-#  IPython.display.Audio(data=y, rate=sr)
-
 plt.figure(figsize=(10, 4))
 librosa.display.specshow(librosa.power_to_db(ps, ref=np.max), y_axis='mel', x_axis='time')
 plt.colorbar(format='%+2.0f dB')
 plt.title('Mel spectrogram')
 plt.tight_layout()
+
 
 # Example of Rock music (time-stretch 0.8)
 y, sr = librosa.load('./datasets/fma_small_augmented/000/000002.mp3', duration=10)
 ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
-ps.shape
-
-# IPython.display.Audio(data=y, rate=sr)
+print(ps.shape)
+print('------------------------')
 
 plt.figure(figsize=(10, 4))
 librosa.display.specshow(librosa.power_to_db(ps, ref=np.max), y_axis='mel', x_axis='time')
@@ -198,12 +207,11 @@ plt.colorbar(format='%+2.0f dB')
 plt.title('Mel spectrogram')
 plt.tight_layout()
 
+
 # Example of Rock music (pitch-shift 2)
 y, sr = librosa.load('./datasets/fma_small_augmented1/000/000002.mp3', duration=10)
 ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
-ps.shape
-
-# IPython.display.Audio(data=y, rate=sr)
+print(ps.shape)
 
 plt.figure(figsize=(10, 4))
 librosa.display.specshow(librosa.power_to_db(ps, ref=np.max), y_axis='mel', x_axis='time')
@@ -252,7 +260,8 @@ for row in data.itertuples():
 
 D = D1 + D2 + D3 + D4 + D5
 
-print("Nu|mber of samples: ", len(D))
+print("Number of samples: ", len(D))
+print('------------------------')
 
 dataset = D
 random.shuffle(dataset)
@@ -332,14 +341,12 @@ plt.show()
 score = model.evaluate(x=X_test, y=Y_test)
 print('Test loss:', score[0])
 print('Test accuracy:', score[1])
+print('------------------------')
 
-#terminal에 텐서보드 실행
 # tensorboard --logdir="C:/Users/Yang Saewon/.keras/graph"
 
-# 모델 저장
 model.save('music_genre_classification.h5')
 
-# 모델 불러오기
 model = load_model('music_genre_classification.h5')
 
 # Read Test Data
@@ -377,7 +384,8 @@ for row in data.itertuples():
     if ps.shape != (128, 431): continue
     D.append((ps, row.genre_number))
 
-print("Nu|mber of samples: ", len(D))
+print("Number of samples: ", len(D))
+print('------------------------')
 
 test = D
 X_test, Y_test = zip(*test)
