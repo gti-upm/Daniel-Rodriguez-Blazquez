@@ -379,7 +379,7 @@ data['path'].head(5)
 D = []  # test dataset
 
 for row in data.itertuples():
-    y, sr = librosa.load('./datasets/fma_small/000/' + row.path, duration=10)
+    y, sr = librosa.load('./datasets/audio/000/' + row.path, duration=10)
     ps = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
     if ps.shape != (128, 431): continue
     D.append((ps, row.genre_number))

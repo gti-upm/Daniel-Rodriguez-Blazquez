@@ -36,7 +36,7 @@ from tensorflow.python.client import device_lib
 
 # AUDIO
 
-y, sr = librosa.load('./datasets/fma_small/021/021058.mp3', duration=10)
+y, sr = librosa.load('./datasets/audio/021/021058.mp3', duration=10)
 
 librosa.feature.rms(y=y)
 
