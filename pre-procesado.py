@@ -30,18 +30,11 @@ def percentage(audio, speech, percentage):
 
 ''' Pregunta si se quiere generar un dataset '''
 def ask_generate_dataset():
-    answer = input("Generar base de datos? (y/n): ")
-    # print(f'Usted ha elegido {answer}')
-    # while answer != 'y' or answer != 'n':
-    #     answer = input("Error. Solo se admite 'y' o 'n'")
-    if answer == 'y':
-        answer = True
-    elif answer == 'n':
-        answer = False
-    else:
-        print("Error. Solo se admite 'y' o 'n'")
+    answer = str(input("Generar base de datos? (y/n): "))
+    if 'y' or 'n' not in answer:
+        answer = str(input("Error. Solo se admite 'y' o 'n'"))
 
-    #answer = True if answer == 'y' else False
+    answer = True if answer == 'y' else False
     return answer
 
 
