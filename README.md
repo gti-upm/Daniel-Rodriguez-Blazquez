@@ -1,4 +1,4 @@
-# music-genre-classifier-convNet-keras
+# Desarrollo de un sistema de detección del nivel de música sobre voz en señales de audio basado en redes neuronales
 
 </br>
 
@@ -25,33 +25,8 @@ And created a end-to-end mel-spectrogram conv2d CNN approach to distinguish betw
 
 ## Data
 
-* `music_analysis.csv`: music file name followed by 8 genre classes.
-
-* [fma_small_zip](https://os.unil.cloud.switch.ch/fma/fma_small.zip): 8,000 tracks of 30s, 8 balanced genres (GTZAN-like) (7.2 GiB)
-
-</br>
-
-The Music genre we are to distinguish are based on [FMA: A DATASET FOR MUSIC ANALYSIS](https://github.com/mdeff/fma)
-
-</br>
-
-Dataset consists of 8 different genres which are:
-
-1. Hip-Hop
-
-2. Pop
-
-3. Folk
-
-4. Experimental
-
-5. Rock
-
-6. International
-
-7. Electronic
-
-8. Instrumental
+* [fma_small_zip](https://os.unil.cloud.switch.ch/fma/fma_small.zip): 8,000 tracks of 30s, 7.2 GB
+* [speech_dataset](https://voice.mozilla.org/en/datasets): 582h of validated total hours, 22 GB
 
 </br>
 
