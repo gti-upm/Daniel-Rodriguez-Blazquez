@@ -36,29 +36,9 @@ print(data.shape)
 print('------------------------')
 
 def folder_name(i):
-    return(str(math.floor(i/1000)))
-    '''
-    if i < 18000:
-        return '0'
-    elif i >= 18000 and i < 41000:
-        return '1'
-    elif i >= 41000 and i < 57000:
-        return '2'
-    elif i >= 57000 and i < 72000:
-        return '3'
-    elif i >= 72000 and i < 89000:
-        return '4'
-    elif i >= 89000 and i < 108000:
-        return '5'
-    elif i >= 108000 and i < 117000:
-        return '6'
-    elif i >= 117000 and i < 127000:
-        return '7'
-    elif i >= 127000 and i < 138000:
-        return '8'
-    else:
-        return '9'
-    '''
+
+    return {i}.format(i)
+
 
 def genre_number(i):
     if i == 'Hip-Hop':
