@@ -1,6 +1,7 @@
 # from concurrent.futures import ThreadPoolExecutor
 import librosa
 from os import scandir, getcwd, makedirs
+import os
 from os.path import abspath
 from time import time
 import pprint
@@ -18,11 +19,12 @@ def ls_file(ruta = getcwd()):
 
 
 ''' Aplica el porcentaje que se le pase como parámetro a la señal de audio y el resultado se le suma a la señal de voz '''
-def percentage(audio, speech, percentage):
+def percentage(audio, speech, speech_sr, percentage):
     signal = speech + audio * (percentage / 100)
     new_measured_song = {
-        "percentage": percentage,
-        "signal": signal
+        "percentage": str(percentage),
+        "signal": signal,
+        "sample_rate": speech_sr
     }
 
     return new_measured_song
@@ -30,12 +32,16 @@ def percentage(audio, speech, percentage):
 
 ''' Pregunta si se quiere generar un dataset '''
 def ask_generate_dataset():
-    answer = str(input("Generar base de datos? (y/n): "))
-    if 'y' or 'n' not in answer:
-        answer = str(input("Error. Solo se admite 'y' o 'n'"))
+    answer = input("Generar base de datos? (y/n): ")
+    if answer == 'y':
+        ret = True
+    elif answer == 'n':
+        ret = False
+    else:
+        ret = False
+        print(input("Error. Solo se admite 'y' o 'n'"))
 
-    answer = True if answer == 'y' else False
-    return answer
+    return ret
 
 
 ''' Funcion que crea un diccionario con ciertas caracteristicas de la señal '''
@@ -66,12 +72,12 @@ def generate_dataset():
         all_speech_song_paths.extend(speech_song_paths)                 # Añade nuevas canciones a la lista de canciones
 
     # dataset_songs = []
-    vector_aux = range(0, 101)[::5]
-    all_speech_song_paths = shuffle(all_speech_song_paths)              # Aleatoriza el orden de los segmentos de voz
+    vector_aux = list(range(0, 101, 5))
+    shuffle(all_speech_song_paths)                                      # Aleatoriza el orden de los segmentos de voz
     counter_aux = 0
-    for audio_song_path in all_audio_song_paths:
+    for k, audio_song_path in enumerate(all_audio_song_paths):
 
-        if not all_speech_song_paths:                                   # Comprueba si hay canciones de voz
+        if len(all_speech_song_paths) == 0:                                   # Comprueba si hay canciones de voz
             break
 
         audio_signal, audio_sr = librosa.load(audio_song_path, duration=5, sr=44100)
@@ -99,17 +105,16 @@ def generate_dataset():
 
         speech_dictionary = create_dictionary(speech_song_path, speech_duration, speech_signal, speech_sr)
 
-        # create_measured_dataset(vector_aux[i], audio_dictionary, speech_dictionary)
-
-        for i in vector_aux:
-            audio_dictionary['RMS'] = speech_dictionary['RMS']                          # -----------------
-            new_measured_song = percentage(audio_signal, speech_signal, vector_aux[i])  # -----------------
-            str_tmp = getcwd()+'/datasets/intro/' + new_measured_song['percentage']
-            path, file = path.split(str_tmp)
-            if not path.exists(path):
+        for i, percentage_level in enumerate(vector_aux):
+            audio_dictionary['RMS'] = speech_dictionary['RMS']
+            # -----------------
+            new_measured_song = percentage(audio_signal, speech_signal, speech_sr, percentage_level)  # -----------------
+            path = os.path.join(getcwd(), 'datasets/intro/', new_measured_song['percentage'])
+            # path, file = path.split(str_tmp)
+            if not os.path.exists(path):
                 makedirs(path)
-                # dataset_songs.append(new_measured_song)                              # Añade las mezclas al dataset que utilizaremos mas tarde
-                librosa.output.write_wav(getcwd() + '/datasets/intro/' + new_measured_song['percentage'], new_measured_song['signal'])
+            # dataset_songs.append(new_measured_song)                              # Añade las mezclas al dataset que utilizaremos mas tarde
+            librosa.output.write_wav(path + '/mix_'+str(k)+'.wav', new_measured_song['signal'], new_measured_song['sample_rate'])
 
     counter_aux += 1
     if counter_aux == len(all_audio_song_paths):
@@ -118,8 +123,8 @@ def generate_dataset():
 
 if __name__ == "__main__":
     start = time()
-
-    if ask_generate_dataset():
+    cond = ask_generate_dataset()
+    if cond:
         generate_dataset()
 
     # import pdb
