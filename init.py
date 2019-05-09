@@ -94,7 +94,7 @@ def correct_pad(backend, inputs, kernel_size):
 
 __version__ = '1.0.7'
 
-from .architecture import InceptionV3
+from .inceptionv3 import InceptionV3
 
 '''
 from . import vgg16

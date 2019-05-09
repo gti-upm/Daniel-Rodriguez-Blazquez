@@ -4,30 +4,11 @@ from os import scandir, getcwd, makedirs
 import os
 from os.path import abspath
 from time import time
-import pprint
+# import pprint
 import numpy as np
 from random import shuffle
+import math
 
-''' Funcion que devuelve carpetas con directorios '''
-def ls_dir(ruta = getcwd()):
-    return [abspath(arch.path) for arch in scandir(ruta) if not arch.is_file()]
-
-
-''' Funcion que devuelve carpetas con archivos '''
-def ls_file(ruta = getcwd()):
-    return [abspath(arch.path) for arch in scandir(ruta) if arch.is_file()]
-
-
-''' Aplica el porcentaje que se le pase como parámetro a la señal de audio y el resultado se le suma a la señal de voz '''
-def percentage(audio, speech, speech_sr, percentage):
-    signal = speech + audio * (percentage / 100)
-    new_measured_song = {
-        "percentage": str(percentage),
-        "signal": signal,
-        "sample_rate": speech_sr
-    }
-
-    return new_measured_song
 
 
 ''' Pregunta si se quiere generar un dataset '''
@@ -40,8 +21,29 @@ def ask_generate_dataset():
     else:
         ret = False
         print(input("Error. Solo se admite 'y' o 'n'"))
-
     return ret
+
+
+''' Funcion que devuelve carpetas con directorios '''
+def ls_dir(ruta = getcwd()):
+    return [abspath(arch.path) for arch in scandir(ruta) if not arch.is_file()]
+
+
+''' Funcion que devuelve carpetas con archivos '''
+def ls_file(ruta = getcwd()):
+    return [abspath(arch.path) for arch in scandir(ruta) if arch.is_file()]
+
+
+''' Aplica el porcentaje que se le pase como parámetro a la señal de audio y el resultado se le suma a la señal de voz '''
+def mix_signals(diff, audio, speech, speech_sr, percentage):
+    audio = audio + diff
+    signal = speech + audio * (percentage / 100)
+    new_mixed_song = {
+        "percentage": str(percentage),
+        "signal": signal,
+        "sample_rate": speech_sr
+    }
+    return new_mixed_song
 
 
 ''' Funcion que crea un diccionario con ciertas caracteristicas de la señal '''
@@ -53,75 +55,93 @@ def create_dictionary(song_path, duration, signal, sr):
         "sample_rate": sr,
         "RMS": np.mean(librosa.feature.rms(y=signal))
     }
-
     return new_song
+
+
+''' Función que ajusta el valor RMS de la música al de la voz '''
+def adjust_rms(audio_rms, speech_rms):
+    diff = math.sqrt(abs(pow(speech_rms, 2) - pow(audio_rms, 2)))
+    audio_rms = audio_rms + diff if audio_rms < speech_rms else audio_rms - diff
+    return audio_rms                                                                    # ---------------------------
 
 
 ''' Genera un dataset '''
 def generate_dataset():
-    audio_folder_paths = ls_dir(ruta=getcwd() + '/datasets/audio/')     # Lista sin orden con los paths de todos los directorios de AUDIO
-    all_audio_song_paths = []                                           # Lista sin orden con los paths de todas las canciones (AUDIO)
+    audio_folder_paths = ls_dir(ruta=getcwd() + '/datasets/audio/')                     # Lista sin orden con los paths de todos los directorios de AUDIO
+    all_audio_song_paths = []                                                           # Lista sin orden con los paths de todas las canciones (AUDIO)
     for audio_folder_path in audio_folder_paths:
         audio_song_paths = ls_file(audio_folder_path)
-        all_audio_song_paths.extend(audio_song_paths)                   # Añade nuevas canciones a la lista de canciones
+        all_audio_song_paths.extend(audio_song_paths)                                   # Añade nuevas canciones a la lista de canciones
 
-    speech_folder_paths = ls_dir(ruta=getcwd() + '/datasets/speech/')   # Lista sin orden con los paths de todos los directorios de VOZ
-    all_speech_song_paths = []                                          # Lista sin orden con los paths de todas las canciones (VOZ)
+    speech_folder_paths = ls_dir(ruta=getcwd() + '/datasets/speech/english/')           # Lista sin orden con los paths de todos los directorios de VOZ
+    all_speech_song_paths = []                                                          # Lista sin orden con los paths de todas las canciones (VOZ)
     for speech_folder_path in speech_folder_paths:
         speech_song_paths = ls_file(speech_folder_path)
-        all_speech_song_paths.extend(speech_song_paths)                 # Añade nuevas canciones a la lista de canciones
+        all_speech_song_paths.extend(speech_song_paths)                                 # Añade nuevas canciones a la lista de canciones
 
-    # dataset_songs = []
     vector_aux = list(range(0, 101, 5))
-    shuffle(all_speech_song_paths)                                      # Aleatoriza el orden de los segmentos de voz
-    counter_aux = 0
+    shuffle(all_speech_song_paths)                                                      # Aleatoriza el orden de los segmentos de voz
+
+    if (len(all_speech_song_paths) or len(all_audio_song_paths)) == 0:                    # Comprueba si hay canciones de voz y de audio
+        return
+
+    aux = 0
     for k, audio_song_path in enumerate(all_audio_song_paths):
 
-        if len(all_speech_song_paths) == 0:                                   # Comprueba si hay canciones de voz
-            break
-
-        audio_signal, audio_sr = librosa.load(audio_song_path, duration=5, sr=44100)
+        audio_signal, audio_sr = librosa.load(audio_song_path, duration=None, sr=44100) # Carga en audio_signal la duracion total de la cancion ------------------
         audio_duration = librosa.get_duration(y=audio_signal, sr=audio_sr)
 
-        if audio_duration < 5:
+        if audio_duration < 5:                                                          # Comprueba si la duración del audio es menor que 5 y si lo es pasa a la siguiente cancion de audio
             continue
 
+        audio_signal, audio_sr = librosa.load(audio_song_path, duration=5, sr=44100)    # Carga 5s de audio despues de comprobar que la duracion es mayor que 5
+        audio_duration = librosa.get_duration(y=audio_signal, sr=audio_sr)
         audio_dictionary = create_dictionary(audio_song_path, audio_duration, audio_signal, audio_sr)
 
         speech_song_path = all_speech_song_paths.pop(0)
-        speech_signal, speech_sr = librosa.load(speech_song_path, duration=5, sr=44100)
+        speech_signal, speech_sr = librosa.load(speech_song_path, duration=None, sr=44100)
         speech_duration = librosa.get_duration(y=speech_signal, sr=speech_sr)
 
         exit_for = False
-        while speech_duration < 5:                                      # Si la voz dura menos de 5s, pasa a la siguiente
-            if not all_speech_song_paths:                               # Comprueba si hay canciones de voz
+        while speech_duration < 5:                                                      # Si la voz dura menos de 5s, pasa a la siguiente
+            if not all_speech_song_paths:                                               # Comprueba si hay canciones de voz
                 exit_for = True
                 break
             speech_song_path = all_speech_song_paths.pop(0)
-            speech_signal, speech_sr = librosa.load(speech_song_path, duration=5, sr=44100)
+            speech_signal, speech_sr = librosa.load(speech_song_path, duration=None, sr=44100)
             speech_duration = librosa.get_duration(y=speech_signal, sr=speech_sr)
         if exit_for:
             break
 
+        speech_signal, speech_sr = librosa.load(speech_song_path, duration=5, sr=44100)
+        speech_duration = librosa.get_duration(y=speech_signal, sr=speech_sr)
         speech_dictionary = create_dictionary(speech_song_path, speech_duration, speech_signal, speech_sr)
 
         for i, percentage_level in enumerate(vector_aux):
-            audio_dictionary['RMS'] = speech_dictionary['RMS']
-            # -----------------
-            new_measured_song = percentage(audio_signal, speech_signal, speech_sr, percentage_level)  # -----------------
-            path = os.path.join(getcwd(), 'datasets/intro/', new_measured_song['percentage'])
-            # path, file = path.split(str_tmp)
+
+            diff = adjust_rms(audio_dictionary['RMS'], speech_dictionary['RMS'])
+
+            new_mixed_song = mix_signals(diff, audio_signal, speech_signal, speech_sr, percentage_level)
+
+            path = os.path.join(getcwd(), 'datasets/train/', new_mixed_song['percentage'])
             if not os.path.exists(path):
                 makedirs(path)
-            # dataset_songs.append(new_measured_song)                              # Añade las mezclas al dataset que utilizaremos mas tarde
-            librosa.output.write_wav(path + '/mix_'+str(k)+'.wav', new_measured_song['signal'], new_measured_song['sample_rate'])
+            if not os.path.exists(path + '/mix_' + str(k) + '.wav'):
+                librosa.output.write_wav(path + '/mix_' + str(k) + '.wav', new_mixed_song['signal'], new_mixed_song['sample_rate'])
+            librosa.output.write_wav(path + '/mix_' + str(k) + '.wav', new_mixed_song['signal'], new_mixed_song['sample_rate'])
 
-    counter_aux += 1
-    if counter_aux == len(all_audio_song_paths):
-        songs_counter = len(vector_aux)*counter_aux
-        print('Proceso terminado. ¡Dataset de {} canciones creado con éxito!'.format(songs_counter))
+        aux += 1
+        if aux % 100 == 0:
+            total = len(vector_aux)*len(all_audio_song_paths)
+            print("{} audios procesados de {}".format(aux, total))
+            if aux == len(all_audio_song_paths):
+                songs_counter = len(vector_aux)*aux
+                print('Proceso terminado. ¡Dataset de {} canciones creado con éxito!'.format(songs_counter))
+                break
+
 
 if __name__ == "__main__":
+
     start = time()
     cond = ask_generate_dataset()
     if cond:
@@ -177,10 +197,6 @@ new_speech_song = {
         }
 
 audio_folder_paths = sorted(audio_folder_paths)  # Ordena por numero las carpetas
-audio_song_paths = sorted(audio_song_paths)  # Ordena por numero las canciones
-
-speech_folder_paths = sorted(speech_folder_paths)  # Ordena por numero las carpetas
-speech_song_paths = sorted(speech_song_paths)  # Ordena por numero las canciones
 
 # Mel-spectrogram parameters
 def compute_mel_gram(src, sr, power, duration):
@@ -202,4 +218,59 @@ def compute_mel_gram(src, sr, power, duration):
 
 audio_mel_spectogram = compute_mel_gram(audio_signal, audio_sr, 2.0, audio_duration)
 speech_mel_spectogram = compute_mel_gram(speech_signal, speech_sr, 2.0, speech_duration)
+
+
+Función que genera las canciones mezcladas
+def generate_mixes(audio_path, speech_path):
+    vector_aux = list(range(0, 101, 5))
+    audio_signal, audio_sr = librosa.load(audio_path, duration=None, sr=44100)      #----------------------
+    audio_duration = librosa.get_duration(y=audio_signal, sr=audio_sr)
+
+    if audio_duration < 5:
+        return
+
+    audio_dictionary = create_dictionary(audio_path, audio_duration, audio_signal, audio_sr)
+
+    speech_path = speech_path
+    speech_signal, speech_sr = librosa.load(speech_path, duration=None, sr=44100)   #----------------------
+    speech_duration = librosa.get_duration(y=speech_signal, sr=speech_sr)
+
+    if speech_duration < 5:
+        return
+
+    speech_dictionary = create_dictionary(speech_path, speech_duration, speech_signal, speech_sr)
+
+    for percentage in vector_aux:
+        audio_adjusted = adjust_rms(audio_dictionary['RMS'], speech_dictionary['RMS'])
+        new_mixed_song = mix_signals(audio_adjusted, speech_signal, speech_sr, percentage)  # -----------------
+        path = os.path.join(getcwd(), 'datasets/train/', new_mixed_song['percentage'])
+        if not os.path.exists(path):
+            makedirs(path)
+        file_name = audio_path.split("/")[-1].split(".")[0]
+        file_path = "{}/mix_{}.wav".format(path, file_name)
+        librosa.output.write_wav(file_path, new_mixed_song['signal'], new_mixed_song['sample_rate'])
+    return None 
+    
+#   song_and_speech_pairs = zip(all_audio_song_paths, all_speech_song_paths)    # Forma parejas con los paths de voz y audio------------------------------------
+#   print('Number of audio songs: ' + str(len(all_audio_song_paths)))
+#   print('Number of voice songs: ' + str(len(all_speech_song_paths)))
+#   zip_len = min(len(all_audio_song_paths), len(all_speech_song_paths))
+#   print('Number of combined segments: ' + str(zip_len))
+#   aux = 0
+    
+# with ThreadPoolExecutor(max_workers = 10) as executor:                    # Ejecuta la función generate_mixes con varios hilos en paralelo
+#     tasks = executor.map(generate_mixes, song_and_speech_pairs)
+#     done = 0
+#     for task in tasks:
+#         task.result()
+#         done += 1
+#         if done % 1000 == 0:
+#             print("{} audios procesados de {}".format(done, zip_len))   
+    
+#   for pair in song_and_speech_pairs:
+#        generate_mixes(pair)
+#       aux += 1
+#       if aux % 1000 == 0:
+#           print("{} audios procesados de {}".format(aux, zip_len))
+    
 '''
