@@ -364,6 +364,7 @@ def InceptionV3(include_top=True,
             x = layers.GlobalAveragePooling2D()(x)
         elif pooling == 'max':
             x = layers.GlobalMaxPooling2D()(x)
+        x = layers.Dense(classes, activation=None, name='predictions')(x)
 
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
