@@ -8,70 +8,52 @@ from keras.layers import MaxPooling2D
 from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
 from keras import backend as k
-import librosa
-import librosa.display
-from os import getcwd, makedirs
 import os
 import numpy as np
 import sys
 import gflags
 from keras.callbacks import TensorBoard
+from keras.optimizers import Adam
 from . import __name__
 import data_utils
 import logz
 import log_utils
 from common_flags import FLAGS
 import utils
-from utils import ls_dir, ls_file, list_dataset, create_dictionary, ask_generate_spectrograms, extract_features
-from keras.callbacks import ReduceLROnPlateau
+from utils import ask_create_model, json_to_model, model_to_json
+from keras.callbacks import ReduceLROnPlateau, LearningRateScheduler
 from time import time, strftime, localtime
 
 TRAIN_PHASE = 1
 
 
-''' Funcion que guarda los espectogramas en carpetas según su porcentaje y que devuelve la base de datos c '''
-def save_melgrams(dataset_path):
-    print('Tamaño del dataset:', len(dataset_path))
-
-    for song_path in dataset_path:
-        song_signal, song_sr = librosa.load(song_path, duration=None, sr=44100)
-        song_duration = librosa.get_duration(y=song_signal, sr=song_sr)
-        song_dictionary = create_dictionary(song_path, song_duration, song_signal, song_sr)
-
-        mel_spectogram = extract_features(song_dictionary)
-
-        folder_number = song_path.split("/")[-2]
-        song_name = song_path.split("/")[-1].replace(".wav", "")
-
-        path = os.path.join(getcwd(), 'datasets/train_spec/{}'.format(folder_number))
-        if not os.path.exists(path):
-            makedirs(path)
-
-        file_path = path + "/mel_spectrogram_{}".format(song_name)
-
-        np.save(file_path, mel_spectogram)
-
-'''
-plt.figure(figsize=(10, 4))
-librosa.display.specshow(librosa.power_to_db(mel_spectrogram, ref=np.max), y_axis='mel', x_axis='time')
-plt.colorbar(format='%+2.0f dB')
-plt.title('Mel spectrogram')
-plt.tight_layout()
-# savefig('mel-espectograma_{}.png'.format(k)) # Guarda la foto con el nombre de path
-'''
-
-
-''' Genera el dataset con los paths de todas las canciones ''' #-----------Descomentar----
-def compute_dataset():
-    # song_paths = list_dataset('/datasets/train/')
-    # shuffle(song_paths)
-    song_paths = ls_file(ruta=getcwd() + '/datasets/train/5/')
-
-    return song_paths
+def lr_schedule(epoch):
+    """Learning Rate Schedule
+    Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
+    Called automatically every epoch as part of callbacks during training.
+    # Arguments
+        epoch (int): The number of epochs
+    # Returns
+        lr (float32): learning rate
+    """
+    lr = FLAGS.initial_lr
+    if epoch > 180:
+        lr *= 0.5e-3
+    elif epoch > 160:
+        lr *= 1e-3
+    elif epoch > 120:
+        lr *= 1e-2
+    elif epoch > 80:
+        lr *= 1e-1
+    print('Learning rate: ', lr)
+    return lr
 
 
 def train_model(train_generator, val_generator, model, initial_epoch):
-    model.compile(optimizer='adam', loss='mean_squared_error')
+
+    model.compile(loss='categorical_crossentropy',
+                  optimizer=Adam(lr=lr_schedule(0)),
+                  metrics=['accuracy'])
 
     # Save model with the lowest validation loss
     weights_path = os.path.join(FLAGS.experiment_rootdir, 'weights_{epoch:03d}.h5')
@@ -83,6 +65,8 @@ def train_model(train_generator, val_generator, model, initial_epoch):
     save_model_and_loss = log_utils.MyCallback(filepath=FLAGS.experiment_rootdir)
 
     # Train model
+    lr_scheduler = LearningRateScheduler(lr_schedule())
+
     lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
                                    cooldown=0,
                                    patience=5,
@@ -92,7 +76,7 @@ def train_model(train_generator, val_generator, model, initial_epoch):
     tensorboard = TensorBoard(log_dir="logs/{}".format(str_time), histogram_freq=0)
     # tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
 
-    callbacks = [write_best_model, save_model_and_loss, lr_reducer, tensorboard]
+    callbacks = [write_best_model, save_model_and_loss, lr_reducer, lr_scheduler, tensorboard]
 
     model.fit_generator(train_generator, val_generator,
                         epochs=FLAGS.epochs,
@@ -128,37 +112,40 @@ def _main():
     print('Tamaño de los mel-espectrogramas: Alto: {}, Ancho: {}'.format(img_height, img_width))
 
     # Generate training data with real-time augmentation
-    train_data_gen = data_utils.DataGenerator(rescale=1. / 255)
+    train_data_gen = data_utils.DataGenerator()
 
     # Iterator object containing training data to be generated batch by batch
     train_generator = train_data_gen.flow_from_directory('train',
                                                          shuffle=True,
                                                          target_size=(img_height, img_width),
+                                                         classes=FLAGS.num_classes,
                                                          batch_size=FLAGS.batch_size)
 
     # Generate validation data with real-time augmentation
-    val_data_gen = data_utils.DataGenerator(rescale=1. / 255)
+    val_data_gen = data_utils.DataGenerator()
 
     # Iterator object containing validation data to be generated batch by batch
     val_generator = val_data_gen.flow_from_directory('val',
                                                      shuffle=False,
                                                      target_size=(img_height, img_width),
+                                                     classes=FLAGS.num_classes,
                                                      batch_size=FLAGS.batch_size)
 
     # Check if the number of classes in data corresponds to the one specified
-    # assert train_generator.num_classes == FLAGS.num_classes, \
-        # " Not matching output dimensions in training data."
+    assert train_generator.num_classes == FLAGS.num_classes, \
+        " Not matching output dimensions in training data."
 
     # Check if the number of classes in data corresponds to the one specified
-    # assert val_generator.num_classes == FLAGS.num_classes, \
-        # " Not matching output dimensions in validation data."
+    assert val_generator.num_classes == FLAGS.num_classes, \
+        " Not matching output dimensions in validation data."
 
     # Weights to restore
     weights_path = FLAGS.initial_weights
 
     # Epoch from which training starts
     initial_epoch = FLAGS.initial_epoch
-    if not FLAGS.restore_model:
+
+    if FLAGS.restore_model:
         # In this case weights are initialized randomly
         weights_path = None
     else:
@@ -166,7 +153,19 @@ def _main():
         initial_epoch = FLAGS.initial_epoch
 
     # Define model
-    model = InceptionV3(weights=None, include_top=False, input_shape=[img_height, img_width], classes=1)
+    cond = ask_create_model()
+    if cond:
+        model = InceptionV3(weights=None, include_top=False, input_shape=[img_height, img_width], classes=train_generator.num_classes)
+    else:
+        if weights_path:
+            try:
+                json_model_path = os.path.join(FLAGS.experiment_rootdir, FLAGS.json_model_fname)
+                model = json_to_model(json_model_path)
+
+                model.load_weights(weights_path)
+                print("Loaded model from {}".format(weights_path))
+            except ImportError:
+                print("Impossible to find weight path. Returning untrained model")
 
     model.summary()
 
@@ -176,7 +175,7 @@ def _main():
 
     # Serialize model into json
     json_model_path = os.path.join(FLAGS.experiment_rootdir, FLAGS.json_model_fname)
-    utils.model_to_json(model, json_model_path)
+    model_to_json(model, json_model_path)
 
     # Train model
     train_model(train_generator, val_generator, model, initial_epoch)
@@ -186,11 +185,6 @@ def _main():
 
 
 if __name__ == "__main__":
-
-    cond = ask_generate_spectrograms()
-    if cond:
-        dataset_path = compute_dataset()
-        save_melgrams(dataset_path)
 
     try:
         argv = FLAGS(sys.argv)  # parse flags

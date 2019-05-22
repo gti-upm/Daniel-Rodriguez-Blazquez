@@ -6,6 +6,9 @@ from common_flags import FLAGS
 import pandas as pd
 from utils import list_dataset, ask_generate_csv
 import math
+import keras
+from keras import backend as k
+from random import shuffle
 
 
 class DataGenerator(ImageDataGenerator):
@@ -50,13 +53,14 @@ class DirectoryIterator(Iterator):
 
         # File of database for the phase
         if directory == 'train':
-            csv_file = os.path.join(FLAGS.experiment_rootdir, 'train.csv')
+            csv_file = os.path.join(FLAGS.experiment_rootdir, 'training.csv')
         elif directory == 'val':
             csv_file = os.path.join(FLAGS.experiment_rootdir, 'validation.csv')
         else:
             csv_file = os.path.join(FLAGS.experiment_rootdir, 'test.csv')
 
         self.file_names, self.ground_truth = load_spectrograms(csv_file)
+        self.num_classes = len(np.unique(self.ground_truth, axis=0))
 
         # Number of samples in data
         self.samples = len(self.file_names)
@@ -64,8 +68,7 @@ class DirectoryIterator(Iterator):
         if self.samples == 0:
             raise IOError("Did not find any data")
 
-        # print('Found {} images belonging to {} classes.'.format(
-        #     self.samples, FLAGS.num_classes))
+        print('Found {} images belonging to {} classes.'.format(self.samples, FLAGS.num_classes))
 
         super(DirectoryIterator, self).__init__(self.samples, batch_size, shuffle, seed)
 
@@ -90,7 +93,7 @@ class DirectoryIterator(Iterator):
         """
 
         # Initialize batches and indexes
-        batch_x, batch_y = [], []
+        batch_x, batch_y_p = [], []
 
         # Build batch of image data
         for i, j in enumerate(index_array):
@@ -99,17 +102,25 @@ class DirectoryIterator(Iterator):
             # x = self.image_data_generator.random_transform(x)
             # x = self.image_data_generator.standardize(x)
             batch_x.append(x)
-            batch_y.append(self.ground_truth[j])
+            batch_y_p.append(self.ground_truth[j])
 
-        # batch_x = np.expand_dims(np.asarray(batch_x), axis=3)
+        # Build batch of labels
+        if FLAGS.f_output == 'softmax':
+            batch_y = np.array(batch_y_p, dtype=k.floatx())
+            batch_y = keras.utils.to_categorical(batch_y, num_classes=FLAGS.num_classes)
+        else:
+            batch_y = batch_y_p
+        batch_x = np.expand_dims(np.asarray(batch_x), axis=3)
 
         return batch_x, np.asarray(batch_y)
+
 
 
 ''' Funcion que divide la base de datos en training 80%, test 20%, validation 20% '''
 
 def cross_val_create(dataset_path):
     data_path = list_dataset(dataset_path)
+    shuffle(data_path)
 
     aux1 = math.floor(0.8*len(data_path))
 
@@ -127,9 +138,9 @@ def cross_val_create(dataset_path):
         make_csv(validation, 'validation.csv')
         make_csv(test, 'test.csv')
 
-    [training_songs_list, training_gt] = load_spectrograms('training.csv')
-    [validation_songs_list, validation_gt] = load_spectrograms('validation.csv')
-    [test_songs_list, test_gt] = load_spectrograms('test.csv')
+    [training_songs_list, training_gt] = load_spectrograms(os.path.join(FLAGS.experiment_rootdir, 'training.csv'))
+    [validation_songs_list, validation_gt] = load_spectrograms(os.path.join(FLAGS.experiment_rootdir, 'validation.csv'))
+    [test_songs_list, test_gt] = load_spectrograms(os.path.join(FLAGS.experiment_rootdir, 'test.csv'))
 
     '''
     # File names, moments and labels of all samples in data.
@@ -166,8 +177,8 @@ def load_spectrograms(csv_file):    # Old cross_val_load()
     label_list = []
 
     for file_name_path in file_name_paths:
-        loaded_song = np.load(file_name_path)
-        song_list.append(loaded_song)
+        # loaded_song = np.load(file_name_path)
+        song_list.append(file_name_path)
 
     for label in ground_truth:
         loaded_label = int(label)
@@ -180,6 +191,7 @@ def make_csv(paths, phase):
     file_path = []
     data_label = []
 
+    # shuffle(paths)
     for path in paths:
         label = path.split("/")[-2]
         file_path.append(path)
@@ -191,4 +203,4 @@ def make_csv(paths, phase):
     }
 
     df = pd.DataFrame(data, columns=['file_path', 'label'])
-    df.to_csv('{}'.format(phase))
+    df.to_csv(os.path.join(FLAGS.experiment_rootdir, phase))

@@ -9,6 +9,7 @@ import itertools
 from keras.utils.generic_utils import Progbar
 from keras.models import model_from_json
 from sklearn.metrics import confusion_matrix
+from random import shuffle
 
 
 def compute_predictions_and_gt(model, generator, steps, verbose=1):
@@ -301,12 +302,13 @@ def list_dataset(path):
     for folder_path in folder_paths:
         song_paths = ls_file(folder_path)
         all_song_paths.extend(song_paths)           # Añade nuevos paths de canciones a la lista de paths de canciones
+    # shuffle(all_song_paths)
     return all_song_paths
 
 
 ''' Pregunta si se quiere generar un dataset '''
-def ask_generate_dataset():
-    answer = input("¿Crear base de datos? (y/n): ")
+def ask_create_model():
+    answer = input("¿Crear modelo desde cero? (y/n): ")
     if answer == 'y':
         ret = True
     elif answer == 'n':
@@ -316,9 +318,10 @@ def ask_generate_dataset():
         print(input("Error. Solo se admite 'y' o 'n'"))
     return ret
 
+
 ''' Pregunta si se quiere generar un dataset '''
-def ask_generate_spectrograms():
-    answer = input("¿Crear espectrogramas? (y/n): ")
+def ask_generate_dataset():
+    answer = input("¿Crear base de datos? (y/n): ")
     if answer == 'y':
         ret = True
     elif answer == 'n':

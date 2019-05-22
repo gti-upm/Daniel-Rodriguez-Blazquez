@@ -21,7 +21,7 @@ gflags.DEFINE_integer('epochs', 20, 'Number of epochs for training')
 gflags.DEFINE_integer('verbose', 1, 'Type of verbose for training')
 gflags.DEFINE_integer('initial_epoch', 0, 'Initial epoch to start training')
 gflags.DEFINE_float('initial_lr', 1e-3, 'Initial learning rate for adam')
-gflags.DEFINE_string('f_output', 'sigmoid', 'Output function')
+gflags.DEFINE_string('f_output', 'softmax', 'Output function')
 
 # Testing parameters
 gflags.DEFINE_float('IOU', 0.5, 'Threshold for the IoU')
@@ -41,8 +41,9 @@ gflags.DEFINE_string('exp_name', "exp_1", 'Name of the experiment to be processe
 gflags.DEFINE_string('data_path', "./datasets/train_spec", 'Folder containing the whole dataset')
 
 # Model
-gflags.DEFINE_bool('restore_model', False, 'Whether to restore a trained model for training')
+gflags.DEFINE_bool('restore_model', True, 'Whether to restore a trained model for training')
 gflags.DEFINE_string('weights_fname', "weights_019.h5", '(Relative) filename of model weights')
 gflags.DEFINE_string('initial_weights', './models/test_6/weights_011.h5', '(Relative) filename of model initial training weights')
 gflags.DEFINE_string('json_model_fname', "model_struct.json", 'Model struct json serialization, filename')
 gflags.DEFINE_integer('n_layers', 1, 'Number that controls the depth network')
+gflags.DEFINE_integer('num_classes', 10, 'Number of classes')

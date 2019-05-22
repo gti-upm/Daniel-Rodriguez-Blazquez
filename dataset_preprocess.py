@@ -10,6 +10,46 @@ import math
 from utils import list_dataset, create_dictionary, ask_generate_dataset, extract_features
 from common_flags import FLAGS
 
+
+''' Funcion que guarda los espectogramas en carpetas según su porcentaje y que devuelve la base de datos c '''
+def save_melgrams(dataset_path):
+    print('Tamaño del dataset:', len(dataset_path))
+
+    for song_path in dataset_path:
+        song_signal, song_sr = librosa.load(song_path, duration=None, sr=44100)
+        song_duration = librosa.get_duration(y=song_signal, sr=song_sr)
+        song_dictionary = create_dictionary(song_path, song_duration, song_signal, song_sr)
+
+        mel_spectogram = extract_features(song_dictionary)
+
+        folder_number = song_path.split("/")[-2]
+        song_name = song_path.split("/")[-1].replace(".wav", "")
+
+        path = os.path.join(getcwd(), 'datasets/train_spec/{}'.format(folder_number))
+        if not os.path.exists(path):
+            makedirs(path)
+
+        file_path = path + "/mel_spectrogram_{}".format(song_name)
+
+        np.save(file_path, mel_spectogram)
+
+'''
+plt.figure(figsize=(10, 4))
+librosa.display.specshow(librosa.power_to_db(mel_spectrogram, ref=np.max), y_axis='mel', x_axis='time')
+plt.colorbar(format='%+2.0f dB')
+plt.title('Mel spectrogram')
+plt.tight_layout()
+# savefig('mel-espectograma_{}.png'.format(k)) # Guarda la foto con el nombre de path
+'''
+
+
+''' Genera el dataset con los paths de todas las canciones '''
+def compute_dataset():
+    song_paths = list_dataset('./datasets/train/')
+    shuffle(song_paths)
+    return song_paths
+
+
 ''' Función que crea una lista con la inversa del valor en dB de 1 a 10 '''
 def target(vector):
     factor = []
@@ -191,9 +231,13 @@ if __name__ == "__main__":
         print('Usage: %s ARGS\\n%s' % (sys.argv[0], FLAGS))
         sys.exit(1)
     start = time()
+    dataset_path = compute_dataset()
+    save_melgrams(dataset_path)
     cond = ask_generate_dataset()
     if cond:
         generate_dataset()
+        dataset_path = compute_dataset()
+        save_melgrams(dataset_path)
 
     # import pdb
     # show = pprint.PrettyPrinter(indent=4).pprint                                          # Función que imprime 'bonito'
