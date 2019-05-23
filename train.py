@@ -1,12 +1,6 @@
 from keras.applications.inception_v3 import InceptionV3
-from keras.preprocessing import image
-from keras.applications.inception_v3 import preprocess_input, decode_predictions
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Flatten
-from keras.layers import Conv2D
-from keras.layers import MaxPooling2D
+from keras.layers import Dense, Activation, Dropout, Flatten, Input
 from keras.callbacks import ModelCheckpoint
-import tensorflow as tf
 from keras import backend as k
 import os
 import numpy as np
@@ -23,10 +17,11 @@ import utils
 from utils import ask_create_model, json_to_model, model_to_json
 from keras.callbacks import ReduceLROnPlateau, LearningRateScheduler
 from time import time, strftime, localtime
+from keras.models import Model
 
 TRAIN_PHASE = 1
 
-
+'''
 def lr_schedule(epoch):
     """Learning Rate Schedule
     Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
@@ -47,7 +42,28 @@ def lr_schedule(epoch):
         lr *= 1e-1
     print('Learning rate: ', lr)
     return lr
+'''
 
+def lr_schedule(epoch):
+    """Learning Rate Schedule
+    Learning rate is scheduled to be reduced after 10, 15, 20, 25 epochs.
+    Called automatically every epoch as part of callbacks during training.
+    # Arguments
+        epoch (int): The number of epochs
+    # Returns
+        lr (float32): learning rate
+    """
+    lr = FLAGS.initial_lr
+    if epoch > 10:
+        lr *= 0.5e-3
+    elif epoch > 15:
+        lr *= 1e-3
+    elif epoch > 20:
+        lr *= 1e-2
+    elif epoch > 25:
+        lr *= 1e-1
+    print('Learning rate: ', lr)
+    return lr
 
 def train_model(train_generator, val_generator, model, initial_epoch):
 
@@ -65,24 +81,25 @@ def train_model(train_generator, val_generator, model, initial_epoch):
     save_model_and_loss = log_utils.MyCallback(filepath=FLAGS.experiment_rootdir)
 
     # Train model
-    lr_scheduler = LearningRateScheduler(lr_schedule())
+    lr_scheduler = LearningRateScheduler(lr_schedule, verbose=FLAGS.verbose)
 
     lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
                                    cooldown=0,
                                    patience=5,
+                                   verbose=FLAGS.verbose,
                                    min_lr=0.5e-6)
 
     str_time = strftime("%Y%b%d_%Hh%Mm%Ss", localtime(time()))
     tensorboard = TensorBoard(log_dir="logs/{}".format(str_time), histogram_freq=0)
-    # tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
 
     callbacks = [write_best_model, save_model_and_loss, lr_reducer, lr_scheduler, tensorboard]
 
-    model.fit_generator(train_generator, val_generator,
+    model.fit_generator(train_generator, validation_data=val_generator,
                         epochs=FLAGS.epochs,
                         verbose=FLAGS.verbose,
                         callbacks=callbacks,
-                        initial_epoch=initial_epoch)
+                        initial_epoch=initial_epoch,
+                        use_multiprocessing=False)
 
 
 def _main():
@@ -155,7 +172,14 @@ def _main():
     # Define model
     cond = ask_create_model()
     if cond:
-        model = InceptionV3(weights=None, include_top=False, input_shape=[img_height, img_width], classes=train_generator.num_classes)
+        bot_model = InceptionV3(weights=None, include_top=False,
+                            input_shape=[img_height, img_width, 1],
+                            classes=train_generator.num_classes)
+        input = Input(shape=[img_height, img_width, 1])
+        top = bot_model(input)
+        top = Flatten()(top)
+        top = Dense(FLAGS.num_classes, activation='softmax', name='predictions')(top)
+        model = Model(inputs=input, outputs=top)
     else:
         if weights_path:
             try:
@@ -168,10 +192,6 @@ def _main():
                 print("Impossible to find weight path. Returning untrained model")
 
     model.summary()
-
-    # scores = model.evaluate(spectrogram_dataset, target_data)
-    # print('\n%s: %.2f%%' % (model.metrics_names[1], scores[1] * 100))
-    # print(model.predict(spectogram_dataset).round())
 
     # Serialize model into json
     json_model_path = os.path.join(FLAGS.experiment_rootdir, FLAGS.json_model_fname)

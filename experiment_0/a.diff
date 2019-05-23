@@ -1,0 +1,201 @@
+diff --git a/__pycache__/data_utils.cpython-37.pyc b/__pycache__/data_utils.cpython-37.pyc
+index 4e6a893..e7cef08 100644
+Binary files a/__pycache__/data_utils.cpython-37.pyc and b/__pycache__/data_utils.cpython-37.pyc differ
+diff --git a/__pycache__/utils.cpython-37.pyc b/__pycache__/utils.cpython-37.pyc
+index ac6c94c..99472b3 100644
+Binary files a/__pycache__/utils.cpython-37.pyc and b/__pycache__/utils.cpython-37.pyc differ
+diff --git a/data_utils.py b/data_utils.py
+index 31d64ff..a3becb6 100644
+--- a/data_utils.py
++++ b/data_utils.py
+@@ -102,7 +102,7 @@ class DirectoryIterator(Iterator):
+             # x = self.image_data_generator.random_transform(x)
+             # x = self.image_data_generator.standardize(x)
+             batch_x.append(x)
+-            batch_y_p.append(self.ground_truth[j])
++            batch_y_p.append(self.ground_truth[j]-1) # Labels between 0-(num_class-1)
+ 
+         # Build batch of labels
+         if FLAGS.f_output == 'softmax':
+diff --git a/dataset_preprocess.py b/dataset_preprocess.py
+index 3024cc3..10d2318 100644
+--- a/dataset_preprocess.py
++++ b/dataset_preprocess.py
+@@ -202,8 +202,8 @@ def generate_dataset():
+             new_mixed_song = mix_signals(audio_dict, speech_dict, targets[db_level-1], db_level)
+ 
+             '''
+-            extract_features(audio_dict)
+-            extract_features(speech_dict)
++            extract_features(audio_dict) # Da fallos
++            extract_features(speech_dict) # Da fallos
+             extract_features(new_mixed_song)
+             '''
+ 
+@@ -230,9 +230,8 @@ if __name__ == "__main__":
+     except gflags.FlagsError:
+         print('Usage: %s ARGS\\n%s' % (sys.argv[0], FLAGS))
+         sys.exit(1)
++
+     start = time()
+-    dataset_path = compute_dataset()
+-    save_melgrams(dataset_path)
+     cond = ask_generate_dataset()
+     if cond:
+         generate_dataset()
+diff --git a/experiment_0/.~lock.training.csv# b/experiment_0/.~lock.training.csv#
+deleted file mode 100644
+index 904c722..0000000
+--- a/experiment_0/.~lock.training.csv#
++++ /dev/null
+@@ -1 +0,0 @@
+-,estudiante,ubuntu,22.05.2019 08:40,file:///home/estudiante/.config/libreoffice/4;
+\ No newline at end of file
+diff --git a/inceptionv3.py b/inceptionv3.py
+index 576e059..8be74df 100644
+--- a/inceptionv3.py
++++ b/inceptionv3.py
+@@ -16,9 +16,10 @@ from __future__ import print_function
+ 
+ import os
+ 
+-from .init import get_submodules_from_kwargs
++import keras.applications.imagenet_utils
++from init import get_submodules_from_kwargs
+ from . import imagenet_utils
+-from .imagenet_utils import decode_predictions
++from ka.imagenet_utils import decode_predictions
+ from .imagenet_utils import _obtain_input_shape
+ 
+ 
+@@ -364,7 +365,7 @@ def InceptionV3(include_top=True,
+             x = layers.GlobalAveragePooling2D()(x)
+         elif pooling == 'max':
+             x = layers.GlobalMaxPooling2D()(x)
+-        x = layers.Dense(classes, activation=None, name='predictions')(x)
++        # x = layers.Dense(classes, activation='softmax', name='predictions')(x)
+ 
+     # Ensure that the model takes into account
+     # any potential predecessors of `input_tensor`.
+diff --git a/train.py b/train.py
+index aa4e387..e7250e0 100644
+--- a/train.py
++++ b/train.py
+@@ -23,10 +23,13 @@ import utils
+ from utils import ask_create_model, json_to_model, model_to_json
+ from keras.callbacks import ReduceLROnPlateau, LearningRateScheduler
+ from time import time, strftime, localtime
++# import inceptionv3
++from keras.layers import Input, Flatten
++from keras.models import Model
+ 
+ TRAIN_PHASE = 1
+ 
+-
++'''
+ def lr_schedule(epoch):
+     """Learning Rate Schedule
+     Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
+@@ -47,7 +50,28 @@ def lr_schedule(epoch):
+         lr *= 1e-1
+     print('Learning rate: ', lr)
+     return lr
++'''
+ 
++def lr_schedule(epoch):
++    """Learning Rate Schedule
++    Learning rate is scheduled to be reduced after 10, 15, 20, 25 epochs.
++    Called automatically every epoch as part of callbacks during training.
++    # Arguments
++        epoch (int): The number of epochs
++    # Returns
++        lr (float32): learning rate
++    """
++    lr = FLAGS.initial_lr
++    if epoch > 10:
++        lr *= 0.5e-3
++    elif epoch > 15:
++        lr *= 1e-3
++    elif epoch > 20:
++        lr *= 1e-2
++    elif epoch > 25:
++        lr *= 1e-1
++    print('Learning rate: ', lr)
++    return lr
+ 
+ def train_model(train_generator, val_generator, model, initial_epoch):
+ 
+@@ -65,11 +89,12 @@ def train_model(train_generator, val_generator, model, initial_epoch):
+     save_model_and_loss = log_utils.MyCallback(filepath=FLAGS.experiment_rootdir)
+ 
+     # Train model
+-    lr_scheduler = LearningRateScheduler(lr_schedule())
++    lr_scheduler = LearningRateScheduler(lr_schedule, verbose=FLAGS.verbose)
+ 
+     lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
+                                    cooldown=0,
+                                    patience=5,
++                                   verbose=FLAGS.verbose,
+                                    min_lr=0.5e-6)
+ 
+     str_time = strftime("%Y%b%d_%Hh%Mm%Ss", localtime(time()))
+@@ -78,11 +103,12 @@ def train_model(train_generator, val_generator, model, initial_epoch):
+ 
+     callbacks = [write_best_model, save_model_and_loss, lr_reducer, lr_scheduler, tensorboard]
+ 
+-    model.fit_generator(train_generator, val_generator,
++    model.fit_generator(train_generator, validation_data=val_generator,
+                         epochs=FLAGS.epochs,
+                         verbose=FLAGS.verbose,
+                         callbacks=callbacks,
+-                        initial_epoch=initial_epoch)
++                        initial_epoch=initial_epoch,
++                        use_multiprocessing=False)
+ 
+ 
+ def _main():
+@@ -155,7 +181,14 @@ def _main():
+     # Define model
+     cond = ask_create_model()
+     if cond:
+-        model = InceptionV3(weights=None, include_top=False, input_shape=[img_height, img_width], classes=train_generator.num_classes)
++        bot_model = InceptionV3(weights=None, include_top=False,
++                            input_shape=[img_height, img_width, 1],
++                            classes=train_generator.num_classes)
++        input = Input(shape=[img_height, img_width, 1])
++        top = bot_model(input)
++        top = Flatten()(top)
++        top = Dense(FLAGS.num_classes, activation='softmax', name='predictions')(top)
++        model = Model(inputs=input, outputs=top)
+     else:
+         if weights_path:
+             try:
+@@ -169,10 +202,6 @@ def _main():
+ 
+     model.summary()
+ 
+-    # scores = model.evaluate(spectrogram_dataset, target_data)
+-    # print('\n%s: %.2f%%' % (model.metrics_names[1], scores[1] * 100))
+-    # print(model.predict(spectogram_dataset).round())
+-
+     # Serialize model into json
+     json_model_path = os.path.join(FLAGS.experiment_rootdir, FLAGS.json_model_fname)
+     model_to_json(model, json_model_path)
+diff --git a/utils.py b/utils.py
+index 1cee0c7..b6bd1b0 100644
+--- a/utils.py
++++ b/utils.py
+@@ -366,11 +366,12 @@ def extract_features(dict):
+     '''
+     plt.figure(figsize=(10, 4))
+     # x = librosa.power_to_db(mel_spectrogram, ref=np.max)
+-    #ibrosa.display.specshow(librosa.power_to_db(mel_spectrogram, ref=np.max), sr=44100, y_axis='mel', x_axis='time')
++    librosa.display.specshow(librosa.power_to_db(mel_spectrogram, ref=np.max), sr=44100, y_axis='mel', x_axis='time')
+     plt.colorbar(format='%+2.0f dB')
+     plt.title('Mel spectrogram')
+     plt.tight_layout()
+     '''
++
+     return mel_spectrogram
+ 
+ 

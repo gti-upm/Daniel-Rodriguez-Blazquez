@@ -102,7 +102,7 @@ class DirectoryIterator(Iterator):
             # x = self.image_data_generator.random_transform(x)
             # x = self.image_data_generator.standardize(x)
             batch_x.append(x)
-            batch_y_p.append(self.ground_truth[j])
+            batch_y_p.append(self.ground_truth[j]-1) # Labels between 0-(num_class-1)
 
         # Build batch of labels
         if FLAGS.f_output == 'softmax':

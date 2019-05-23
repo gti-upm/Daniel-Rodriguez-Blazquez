@@ -366,11 +366,12 @@ def extract_features(dict):
     '''
     plt.figure(figsize=(10, 4))
     # x = librosa.power_to_db(mel_spectrogram, ref=np.max)
-    #ibrosa.display.specshow(librosa.power_to_db(mel_spectrogram, ref=np.max), sr=44100, y_axis='mel', x_axis='time')
+    librosa.display.specshow(librosa.power_to_db(mel_spectrogram, ref=np.max), sr=44100, y_axis='mel', x_axis='time')
     plt.colorbar(format='%+2.0f dB')
     plt.title('Mel spectrogram')
     plt.tight_layout()
     '''
+
     return mel_spectrogram
 
 

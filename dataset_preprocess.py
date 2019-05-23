@@ -202,8 +202,8 @@ def generate_dataset():
             new_mixed_song = mix_signals(audio_dict, speech_dict, targets[db_level-1], db_level)
 
             '''
-            extract_features(audio_dict)
-            extract_features(speech_dict)
+            extract_features(audio_dict) # Da fallos
+            extract_features(speech_dict) # Da fallos
             extract_features(new_mixed_song)
             '''
 
@@ -230,9 +230,8 @@ if __name__ == "__main__":
     except gflags.FlagsError:
         print('Usage: %s ARGS\\n%s' % (sys.argv[0], FLAGS))
         sys.exit(1)
+
     start = time()
-    dataset_path = compute_dataset()
-    save_melgrams(dataset_path)
     cond = ask_generate_dataset()
     if cond:
         generate_dataset()
