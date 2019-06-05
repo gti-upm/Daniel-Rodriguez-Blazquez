@@ -7,3 +7,6 @@ venv/
 experiment_0/
 experiment_1/
 experiment_2/
+experiment_3/
+__pycache__/
+Capturas/
