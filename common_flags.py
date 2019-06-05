@@ -16,8 +16,8 @@ gflags.DEFINE_string('h_grid', 50, 'Horizontal size of the grid classifiers')
 gflags.DEFINE_string('v_grid', 25, 'Vertical size of the grid classifiers')
 
 # Training parameters
-gflags.DEFINE_integer('batch_size', 32, 'Batch size in training and evaluation')
-gflags.DEFINE_integer('epochs', 20, 'Number of epochs for training')
+gflags.DEFINE_integer('batch_size', 128, 'Batch size in training and evaluation')
+gflags.DEFINE_integer('epochs', 100, 'Number of epochs for training')
 gflags.DEFINE_integer('verbose', 1, 'Type of verbose for training')
 gflags.DEFINE_integer('initial_epoch', 0, 'Initial epoch to start training')
 gflags.DEFINE_float('initial_lr', 1e-3, 'Initial learning rate for adam')
@@ -33,7 +33,7 @@ gflags.DEFINE_float('area_threshold', 19000/(1.875**2), 'Max size of the detecti
 # ---------- OJO -------------
 gflags.DEFINE_string('audio_rootdir', "./datasets/audio/", 'Folder containing audio folders')
 gflags.DEFINE_string('speech_rootdir', "./datasets/speech/", 'Folder containing speech folders')
-gflags.DEFINE_string('experiment_rootdir', "./experiment_0/", 'Folder containing all the logs, model weights and results')
+gflags.DEFINE_string('experiment_rootdir', "./experiment_3/", 'Folder containing all the logs, model weights and results')
 gflags.DEFINE_string('train_dir', "datasets/train_spec/", 'Folder containing training experiments')
 gflags.DEFINE_string('val_dir', "datasets/val_spec/", 'Folder containing validation experiments')
 gflags.DEFINE_string('test_dir', "datasets/test_spec/", 'Folder containing testing experiments')
@@ -41,9 +41,8 @@ gflags.DEFINE_string('exp_name', "exp_1", 'Name of the experiment to be processe
 gflags.DEFINE_string('data_path', "./datasets/train_spec", 'Folder containing the whole dataset')
 
 # Model
-gflags.DEFINE_bool('restore_model', True, 'Whether to restore a trained model for training')
-gflags.DEFINE_string('weights_fname', "weights_019.h5", '(Relative) filename of model weights')
-gflags.DEFINE_string('initial_weights', './models/test_6/weights_011.h5', '(Relative) filename of model initial training weights')
+gflags.DEFINE_bool('restore_model', False, 'Whether to restore a trained model for training')
+gflags.DEFINE_string('weights_fname', "weights_100.h5", '(Relative) filename of model weights')
+gflags.DEFINE_string('initial_weights', './experiment_1/weights_100.h5', '(Relative) filename of model initial training weights')
 gflags.DEFINE_string('json_model_fname', "model_struct.json", 'Model struct json serialization, filename')
-gflags.DEFINE_integer('n_layers', 1, 'Number that controls the depth network')
 gflags.DEFINE_integer('num_classes', 10, 'Number of classes')

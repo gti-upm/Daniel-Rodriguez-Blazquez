@@ -1,48 +1,24 @@
 from keras.applications.inception_v3 import InceptionV3
 from keras.layers import Dense, Activation, Dropout, Flatten, Input
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, TensorBoard, EarlyStopping
+from keras.optimizers import Adam
+from keras.models import Model
 from keras import backend as k
 import os
 import numpy as np
 import sys
 import gflags
-from keras.callbacks import TensorBoard
-from keras.optimizers import Adam
 from . import __name__
 import data_utils
 import logz
 import log_utils
 from common_flags import FLAGS
 import utils
-from utils import ask_create_model, json_to_model, model_to_json
-from keras.callbacks import ReduceLROnPlateau, LearningRateScheduler
+from utils import json_to_model, model_to_json
 from time import time, strftime, localtime
-from keras.models import Model
 
 TRAIN_PHASE = 1
 
-'''
-def lr_schedule(epoch):
-    """Learning Rate Schedule
-    Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
-    Called automatically every epoch as part of callbacks during training.
-    # Arguments
-        epoch (int): The number of epochs
-    # Returns
-        lr (float32): learning rate
-    """
-    lr = FLAGS.initial_lr
-    if epoch > 180:
-        lr *= 0.5e-3
-    elif epoch > 160:
-        lr *= 1e-3
-    elif epoch > 120:
-        lr *= 1e-2
-    elif epoch > 80:
-        lr *= 1e-1
-    print('Learning rate: ', lr)
-    return lr
-'''
 
 def lr_schedule(epoch):
     """Learning Rate Schedule
@@ -54,14 +30,14 @@ def lr_schedule(epoch):
         lr (float32): learning rate
     """
     lr = FLAGS.initial_lr
-    if epoch > 10:
+    if epoch > 150:
         lr *= 0.5e-3
-    elif epoch > 15:
-        lr *= 1e-3
-    elif epoch > 20:
+    elif epoch > 100:
         lr *= 1e-2
-    elif epoch > 25:
+    elif epoch > 50:
         lr *= 1e-1
+    elif epoch > 0:
+        lr *= 1
     print('Learning rate: ', lr)
     return lr
 
@@ -88,6 +64,7 @@ def train_model(train_generator, val_generator, model, initial_epoch):
                                    patience=5,
                                    verbose=FLAGS.verbose,
                                    min_lr=0.5e-6)
+    # earlystopping = EarlyStopping(monitor='val_loss', patience=3, verbose=FLAGS.verbose)
 
     str_time = strftime("%Y%b%d_%Hh%Mm%Ss", localtime(time()))
     tensorboard = TensorBoard(log_dir="logs/{}".format(str_time), histogram_freq=0)
@@ -99,19 +76,10 @@ def train_model(train_generator, val_generator, model, initial_epoch):
                         verbose=FLAGS.verbose,
                         callbacks=callbacks,
                         initial_epoch=initial_epoch,
-                        use_multiprocessing=False)
+                        use_multiprocessing=True)
 
 
 def _main():
-    '''
-    # Set random seed
-    if FLAGS.random_seed:
-        seed = np.random.randint(0, 2 * 31 - 1)
-    else:
-        seed = 5
-    np.random.seed(seed)
-    tf.set_random_seed(seed)
-    '''
 
     # Set training phase
     k.set_learning_phase(TRAIN_PHASE)
@@ -163,33 +131,35 @@ def _main():
     initial_epoch = FLAGS.initial_epoch
 
     if FLAGS.restore_model:
+        # In this case weights are initialized as specified in pre-trained model
+        # initial_epoch = FLAGS.initial_epoch
+        try:
+            # Carga estructura de la red
+            json_model_path = os.path.join(FLAGS.experiment_rootdir, FLAGS.json_model_fname)
+            model = json_to_model(json_model_path)
+
+            # Carga los pesos
+            model.load_weights(weights_path)
+            print("Loaded model from {}".format(weights_path))
+        except ImportError:
+            print("Impossible to find weight path. Returning untrained model")
+    else:
         # In this case weights are initialized randomly
         weights_path = None
-    else:
-        # In this case weights are initialized as specified in pre-trained model
-        initial_epoch = FLAGS.initial_epoch
 
-    # Define model
-    cond = ask_create_model()
-    if cond:
+        # Define model
         bot_model = InceptionV3(weights=None, include_top=False,
-                            input_shape=[img_height, img_width, 1],
-                            classes=train_generator.num_classes)
+                                input_shape=[img_height, img_width, 1],
+                                classes=train_generator.num_classes)
+        bot_model.summary()
         input = Input(shape=[img_height, img_width, 1])
         top = bot_model(input)
-        top = Flatten()(top)
+
+        intermediate = Dropout()(top)
+
+        top = Flatten()(intermediate)
         top = Dense(FLAGS.num_classes, activation='softmax', name='predictions')(top)
         model = Model(inputs=input, outputs=top)
-    else:
-        if weights_path:
-            try:
-                json_model_path = os.path.join(FLAGS.experiment_rootdir, FLAGS.json_model_fname)
-                model = json_to_model(json_model_path)
-
-                model.load_weights(weights_path)
-                print("Loaded model from {}".format(weights_path))
-            except ImportError:
-                print("Impossible to find weight path. Returning untrained model")
 
     model.summary()
 
@@ -242,4 +212,35 @@ if __name__ == "__main__":
 
     preds = model.predict(x)
     print('Prediction:', decode_predictions(preds, top=1)[0][0])  
+    
+    # Set random seed
+    if FLAGS.random_seed:
+        seed = np.random.randint(0, 2 * 31 - 1)
+    else:
+        seed = 5
+    np.random.seed(seed)
+    tf.set_random_seed(seed)
+    
+    # Define model
+    cond = ask_create_model()
+    if cond:
+        bot_model = InceptionV3(weights=None, include_top=False,
+                            input_shape=[img_height, img_width, 1],
+                            classes=train_generator.num_classes)
+        input = Input(shape=[img_height, img_width, 1])
+        top = bot_model(input)
+        top = Flatten()(top)
+        top = Dense(FLAGS.num_classes, activation='softmax', name='predictions')(top)
+        model = Model(inputs=input, outputs=top)
+    else:
+        if weights_path:
+            try:
+                json_model_path = os.path.join(FLAGS.experiment_rootdir, FLAGS.json_model_fname)
+                model = json_to_model(json_model_path)
+
+                model.load_weights(weights_path)
+                print("Loaded model from {}".format(weights_path))
+            except ImportError:
+                print("Impossible to find weight path. Returning untrained model")
+    
 '''

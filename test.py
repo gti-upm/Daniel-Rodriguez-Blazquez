@@ -67,11 +67,11 @@ def _main():
                                                        batch_size=FLAGS.batch_size)
 
     # Load json and create model
-    json_model_path = os.path.join(FLAGS.experiment_rootdir1, FLAGS.json_model_fname)
+    json_model_path = os.path.join(FLAGS.experiment_rootdir, FLAGS.json_model_fname)
     model = utils.json_to_model(json_model_path)
 
     # Load weights
-    weights_load_path = os.path.abspath('./models/test_5/weights_010.h5')
+    weights_load_path = os.path.abspath('./experiment_2/weights_151.h5')
     try:
         model.load_weights(weights_load_path)
         print("Loaded model from {}".format(weights_load_path))
@@ -100,16 +100,16 @@ def _main():
     print("-----------------------------------------------")
 
     # Save evaluation
-    utils.write_to_file(evaluation, os.path.join(FLAGS.experiment_rootdir1, 'test_results.json'))
+    utils.write_to_file(evaluation, os.path.join(FLAGS.experiment_rootdir, 'test_results.json'))
 
     # Save predicted and real steerings as a dictionary
     labels_dict = {'pred_labels': pred_labels.tolist(),
                    'real_labels': real_labels.tolist()}
-    utils.write_to_file(labels_dict, os.path.join(FLAGS.experiment_rootdir1,
+    utils.write_to_file(labels_dict, os.path.join(FLAGS.experiment_rootdir,
                                                   'predicted_and_real_labels.json'))
 
     # Visualize confusion matrix
-    utils.plot_confusion_matrix('test', FLAGS.experiment_rootdir1, real_labels,
+    utils.plot_confusion_matrix('test', FLAGS.experiment_rootdir, real_labels,
                                 pred_labels, CLASSES, normalize=True)
 
 

@@ -20,8 +20,8 @@ class DataGenerator(ImageDataGenerator):
     unchanged.
     """
 
-    def flow_from_directory(self, directory, target_size=(96, 862), color_mode='rgb',
-                            classes=None, class_mode='categorical', batch_size=32, shuffle=True,
+    def flow_from_directory(self, directory, target_size=(FLAGS.img_height, FLAGS.img_width), color_mode='rgb',
+                            classes=None, class_mode='categorical', batch_size=FLAGS.batch_size, shuffle=True,
                             seed=None, save_to_dir=False, save_prefix='', save_format='png',
                             follow_links=False, subset=None, interpolation='nearest'):
         return DirectoryIterator(directory, self, target_size=target_size,
@@ -44,8 +44,8 @@ class DirectoryIterator(Iterator):
     """
 
     def __init__(self, directory, image_data_generator,
-                 target_size=(96, 862),
-                 batch_size=32, shuffle=True, seed=None, follow_links=False):
+                 target_size=(FLAGS.img_height, FLAGS.img_width),
+                 batch_size=FLAGS.batch_size, shuffle=True, seed=None, follow_links=False):
 
         self.image_data_generator = image_data_generator
         self.target_size = target_size

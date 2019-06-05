@@ -3,3 +3,7 @@ datasets/
 .png
 environment.yml
 logs
+venv/
+experiment_0/
+experiment_1/
+experiment_2/

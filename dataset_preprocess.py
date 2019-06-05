@@ -202,8 +202,8 @@ def generate_dataset():
             new_mixed_song = mix_signals(audio_dict, speech_dict, targets[db_level-1], db_level)
 
             '''
-            extract_features(audio_dict) # Da fallos
-            extract_features(speech_dict) # Da fallos
+            extract_features(audio_dict)
+            extract_features(speech_dict)
             extract_features(new_mixed_song)
             '''
 

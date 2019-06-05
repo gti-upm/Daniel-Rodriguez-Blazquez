@@ -9,7 +9,7 @@ import itertools
 from keras.utils.generic_utils import Progbar
 from keras.models import model_from_json
 from sklearn.metrics import confusion_matrix
-from random import shuffle
+from common_flags import FLAGS
 
 
 def compute_predictions_and_gt(model, generator, steps, verbose=1):
@@ -307,19 +307,6 @@ def list_dataset(path):
 
 
 ''' Pregunta si se quiere generar un dataset '''
-def ask_create_model():
-    answer = input("¿Crear modelo desde cero? (y/n): ")
-    if answer == 'y':
-        ret = True
-    elif answer == 'n':
-        ret = False
-    else:
-        ret = False
-        print(input("Error. Solo se admite 'y' o 'n'"))
-    return ret
-
-
-''' Pregunta si se quiere generar un dataset '''
 def ask_generate_dataset():
     answer = input("¿Crear base de datos? (y/n): ")
     if answer == 'y':
@@ -378,7 +365,7 @@ def extract_features(dict):
 ''' Funcion que genera el mel-espectrograma de la cancion que se le pasa como parametro '''
 def compute_mel_gram(separation, sr, power, segment):
     n_fft = 512
-    n_mel = 96
+    n_mel = FLAGS.img_height
     hop_len = 256
     n_sample = segment.shape[0]
     n_sample_fit = int(separation*sr)
