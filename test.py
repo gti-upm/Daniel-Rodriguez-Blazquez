@@ -7,6 +7,12 @@ from sklearn import metrics
 from keras import backend as k
 import utils
 import data_utils
+'''
+# import the pyplot and wavfile modules
+import matplotlib.pyplot as plot
+from scipy.io import wavfile
+from os import getcwd, makedirs
+'''
 
 TEST_PHASE = 1
 CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -71,7 +77,7 @@ def _main():
     model = utils.json_to_model(json_model_path)
 
     # Load weights
-    weights_load_path = os.path.abspath('./experiment_2/weights_151.h5')
+    weights_load_path = os.path.abspath('./experiment_3/weights_039.h5')
     try:
         model.load_weights(weights_load_path)
         print("Loaded model from {}".format(weights_load_path))
@@ -121,4 +127,18 @@ if  __name__ == "__main__":
     except gflags.FlagsError:
         print('Usage: %s ARGS\\n%s' % (sys.argv[0], FLAGS))
         sys.exit(1)
+        '''
+        # Read the wav file (mono)
+        samplingFrequency, signalData = wavfile.read(os.path.join(getcwd(), 'datasets/train/5/') + 'mix_24.wav')
+        # Plot the signal read from wav file
+        plot.figure(figsize=(10, 4))
+        plot.subplot()
+        plot.specgram(signalData, Fs=samplingFrequency)
+        plot.xlabel('Time (s)')
+        plot.ylabel('Frequency (Hz)')
+        plot.colorbar(format='%+2.0f dB')
+        plot.title('Mel spectrogram')
+        plot.tight_layout()
+        plot.show()
+        '''
     _main()
