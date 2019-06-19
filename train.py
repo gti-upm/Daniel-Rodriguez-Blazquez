@@ -1,5 +1,5 @@
 from keras.applications.inception_v3 import InceptionV3
-from keras.layers import Dense, Activation, Dropout, Flatten, Input, BatchNormalization
+from keras.layers import Dense, Activation, Dropout, Flatten, Input
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, TensorBoard, EarlyStopping
 from keras.optimizers import Adam
 from keras.models import Model
@@ -154,16 +154,11 @@ def _main():
         bot_model.summary()
         input = Input(shape=[img_height, img_width, 1])
         top = bot_model(input)
-        # intermediate = Flatten()(top)
-        # top = Dense(FLAGS.num_classes, activation='softmax', name='predictions')(intermediate)
-        intermediate = Flatten()(top)
-        top = Dense(512, activation='softmax', name='predictions')(intermediate)
-        top = BatchNormalization()(top)
-        top = Dropout(0.5)(top)
-        top = Dense(256, activation='softmax', name='predictions')(top)
-        top = BatchNormalization()(top)
-        top = Dropout(0.3)(top)
 
+        # intermediate = Dropout()(top)
+        # top = Flatten()(intermediate)
+        top = Flatten()(top)
+        top = Dense(FLAGS.num_classes, activation='softmax', name='predictions')(top)
         model = Model(inputs=input, outputs=top)
 
     model.summary()
@@ -200,6 +195,11 @@ if __name__ == "__main__":
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
 
+    model = Sequential
+    model.add(Dense(16, input_dim=2, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+    # model = InceptionV3(weights=None)
+
     model.compile(loss='mean_squared_error',
                   optimizer='adam',
                   metrics=['binary_accuracy'])
@@ -212,5 +212,35 @@ if __name__ == "__main__":
 
     preds = model.predict(x)
     print('Prediction:', decode_predictions(preds, top=1)[0][0])  
-'''
+    
+    # Set random seed
+    if FLAGS.random_seed:
+        seed = np.random.randint(0, 2 * 31 - 1)
+    else:
+        seed = 5
+    np.random.seed(seed)
+    tf.set_random_seed(seed)
+    
+    # Define model
+    cond = ask_create_model()
+    if cond:
+        bot_model = InceptionV3(weights=None, include_top=False,
+                            input_shape=[img_height, img_width, 1],
+                            classes=train_generator.num_classes)
+        input = Input(shape=[img_height, img_width, 1])
+        top = bot_model(input)
+        top = Flatten()(top)
+        top = Dense(FLAGS.num_classes, activation='softmax', name='predictions')(top)
+        model = Model(inputs=input, outputs=top)
+    else:
+        if weights_path:
+            try:
+                json_model_path = os.path.join(FLAGS.experiment_rootdir, FLAGS.json_model_fname)
+                model = json_to_model(json_model_path)
 
+                model.load_weights(weights_path)
+                print("Loaded model from {}".format(weights_path))
+            except ImportError:
+                print("Impossible to find weight path. Returning untrained model")
+    
+'''

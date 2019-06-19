@@ -7,6 +7,7 @@ from sklearn import metrics
 from keras import backend as k
 import utils
 import data_utils
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, classification_report, accuracy_score
 '''
 # import the pyplot and wavfile modules
 import matplotlib.pyplot as plot
@@ -63,6 +64,10 @@ def _main():
     # Set testing mode (dropout/batch normalization)
     k.set_learning_phase(TEST_PHASE)
 
+    # Split the data into training, validation and test sets
+    if FLAGS.initial_epoch == 0:
+        data_utils.cross_val_create(FLAGS.data_path)
+
     # Generate testing data
     test_data_gen = data_utils.DataGenerator()
 
@@ -77,7 +82,7 @@ def _main():
     model = utils.json_to_model(json_model_path)
 
     # Load weights
-    weights_load_path = os.path.abspath('./experiment_3/weights_039.h5')
+    weights_load_path = os.path.abspath('./experiment_6/weights_039.h5')
     try:
         model.load_weights(weights_load_path)
         print("Loaded model from {}".format(weights_load_path))
@@ -118,6 +123,13 @@ def _main():
     utils.plot_confusion_matrix('test', FLAGS.experiment_rootdir, real_labels,
                                 pred_labels, CLASSES, normalize=True)
 
+    print('Accuracy:', accuracy_score(real_labels, pred_labels))
+    print('F1 score:', f1_score(real_labels, pred_labels, average='micro'))
+    print('Recall:', recall_score(real_labels, pred_labels, average='micro'))
+    print('Precision:', precision_score(real_labels, pred_labels, average='micro'))
+    print('\n clasification report:\n', classification_report(real_labels, pred_labels))
+    print('\n confussion matrix:\n', confusion_matrix(real_labels, pred_labels))
+
 
 
 if  __name__ == "__main__":
@@ -127,18 +139,20 @@ if  __name__ == "__main__":
     except gflags.FlagsError:
         print('Usage: %s ARGS\\n%s' % (sys.argv[0], FLAGS))
         sys.exit(1)
-        '''
-        # Read the wav file (mono)
-        samplingFrequency, signalData = wavfile.read(os.path.join(getcwd(), 'datasets/train/5/') + 'mix_24.wav')
-        # Plot the signal read from wav file
-        plot.figure(figsize=(10, 4))
-        plot.subplot()
-        plot.specgram(signalData, Fs=samplingFrequency)
-        plot.xlabel('Time (s)')
-        plot.ylabel('Frequency (Hz)')
-        plot.colorbar(format='%+2.0f dB')
-        plot.title('Mel spectrogram')
-        plot.tight_layout()
-        plot.show()
-        '''
+
+    '''
+    # Read the wav file (mono)
+    samplingFrequency, signalData = wavfile.read(os.path.join(getcwd(), 'datasets/train/5/') + 'mix_24.wav')
+    # Plot the signal read from wav file
+    plot.figure(figsize=(10, 4))
+    plot.subplot()
+    plot.specgram(signalData, Fs=samplingFrequency)
+    plot.xlabel('Time (s)')
+    plot.ylabel('Frequency (Hz)')
+    plot.colorbar(format='%+2.0f dB')
+    plot.title('Mel spectrogram')
+    plot.tight_layout()
+    plot.show()
+    '''
+
     _main()

@@ -94,6 +94,7 @@ def normalize(dictionary):
 
     signal_db = 20 * math.log10(mean)
 
+    # target_nu contiene el valor de referencia de -14 dB en unidades naturales: 0.1995262315
     diff_nu = abs(mean - FLAGS.target_nu)
 
     if FLAGS.target_level >= signal_db:

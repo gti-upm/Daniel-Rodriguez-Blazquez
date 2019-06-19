@@ -33,7 +33,7 @@ gflags.DEFINE_float('area_threshold', 19000/(1.875**2), 'Max size of the detecti
 # ---------- OJO -------------
 gflags.DEFINE_string('audio_rootdir', "./datasets/audio/", 'Folder containing audio folders')
 gflags.DEFINE_string('speech_rootdir', "./datasets/speech/", 'Folder containing speech folders')
-gflags.DEFINE_string('experiment_rootdir', "./experiment_3/", 'Folder containing all the logs, model weights and results')
+gflags.DEFINE_string('experiment_rootdir', "./experiment_6/", 'Folder containing all the logs, model weights and results')
 gflags.DEFINE_string('train_dir', "datasets/train_spec/", 'Folder containing training experiments')
 gflags.DEFINE_string('val_dir', "datasets/val_spec/", 'Folder containing validation experiments')
 gflags.DEFINE_string('test_dir', "datasets/test_spec/", 'Folder containing testing experiments')
@@ -41,8 +41,8 @@ gflags.DEFINE_string('exp_name', "exp_1", 'Name of the experiment to be processe
 gflags.DEFINE_string('data_path', "./datasets/train_spec", 'Folder containing the whole dataset')
 
 # Model
-gflags.DEFINE_bool('restore_model', True, 'Whether to restore a trained model for training')
-gflags.DEFINE_string('weights_fname', "weights_151.h5", '(Relative) filename of model weights')
-gflags.DEFINE_string('initial_weights', './experiment_3/weights_151.h5', '(Relative) filename of model initial training weights')
+gflags.DEFINE_bool('restore_model', False, 'Whether to restore a trained model for training')
+gflags.DEFINE_string('weights_fname', "weights_039.h5", '(Relative) filename of model weights')
+gflags.DEFINE_string('initial_weights', './experiment_6/weights_039.h5', '(Relative) filename of model initial training weights')
 gflags.DEFINE_string('json_model_fname', "model_struct.json", 'Model struct json serialization, filename')
 gflags.DEFINE_integer('num_classes', 10, 'Number of classes')

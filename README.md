@@ -2,83 +2,82 @@
 
 </br>
 
-## Overview
+## Resumen
 
-Recognizing music genre is a challenging task in the area of music info retrieval. 
+La distinción entre voz y audio lleva siendo durante muchos años un objeto de estudio en el campo de la Inteligencia Artificial. Este tema ha llevado a diversos trabajos centrados en la distinción de géneros musicales, detección del pitch o el reconocimiento de instrumentos entre otras cosas. Además, existen otros trabajos como la recomendación de música y la distinción de locutores que empiezan a jugar un papel importante en un mundo cada vez más digital y autónomo. Sin embargo, en este campo existen una serie de limitaciones ya que el hecho de distinguir automáticamente música y habla no es una tarea fácil de realizar por las similitudes que ambas señales comparten. Por lo tanto, para abordar la mayoría de los trabajos son necesarias técnicas de desarrollo avanzadas como pueden ser el Machine Learning o el Deep Learning.  
 
-In this case we made an idea of using cnn architecture to distinguish music genres. 
+En este trabajo se va a proponer una solución para distinguir en una señal de audio que combina habla y música, cual es el nivel relativo de música respecto a la voz. Una posible aplicación de este trabajo puede ser el reconocimiento de segmentos de música con derechos de autor en transmisiones de televisión y radio, donde puede haber música de fondo en una conversación, entrevista, debate, etc.
 
-And created a end-to-end mel-spectrogram conv2d CNN approach to distinguish between different "Musics" with Keras implementation.
+Para lograr lo recién mencionado se va a diseñar y entrenar una red neuronal para distinguir el nivel de musica sobre voz que hay en una señal de audio. Para ello se creará una base de datos con segmentos de voz y música mezclados con distintos niveles de música. Esta base de datos se pre-procesará para obtener espectrogramas, los cuales son señales bidimensionales susceptibles de ser analizadas por redes convolucionales. Finalmente, se realizarán experimentos para comprobar la capacidad de aprendizaje y de éxito que dicha red es capaz de lograr.  
 
 </br>
 
-## Requirement
+## Sistema operativo y librerías
+
+  * Linux
+
+    
 
   * Tensorflow
+
   * Keras
+
   * matplotlib.pyplot
+
   * librosa
+
   * numpy
+
   * pandas
 
 </br>
 
-## Data
+## Base de datos y estructura
 
-* [fma_small_zip](https://os.unil.cloud.switch.ch/fma/fma_small.zip): 8,000 tracks of 30s, 7.2 GB
-* [speech_dataset](https://voice.mozilla.org/en/datasets): 582h of validated total hours, 22 GB
+Para llevar a cabo la distinción del nivel de música con respecto al de voz en un segmento de audio (voz y música), se necesita transformar las bases de datos de voz y música a un pre-procesado de forma que cree una nueva base de datos en forma de espectrogramas para la tarea que se va a realizar.
 
-</br>
+Para la creación de esta base de datos se siguieron una serie de pasos mostrados en el siguiente diagrama de bloques:
 
-## Method
+![1](/home/drb/code/Daniel-Rodriguez-Blazquez/figs/Diagrama bloques pre-procesado.png)
 
-</br>
 
-1. Note that all the mp3 music files are converted to wav. Here we use only 10s of music file out of 30s (you could try using 30 sec if you want to). Input sizes are (128, 431)
 
-2. load the music files using librosa.load. Here is one example of 10 sec mel-spectrogram.
+* Base de datos de voz
 
-![3](https://user-images.githubusercontent.com/40786348/45913154-84e0c780-be68-11e8-822f-446b3d8334d0.PNG)
+Esta base de datos es [ZeroSpeech](https://download.zerospeech.com). En esta página web, se encuentran disponibles tres archivos: dos para la parte de entrenamiento (training) y una para la parte de test.  Las correspondientes a la parte de entrenamiento son dos: la primera es la empleada como base de datos de voz en nuestro modelo y la segunda es una muestra reducida de la base de datos anterior. El tercer archivo dedicado a la parte de test fue descartado ya que contenía segmentos de voz en un idioma distinto al inglés.  
 
-3. implement data augmentation (time stretch 2times, pitch shift), and we get around 32000 music files.
+En este conjunto de muestras de voz existen un total de 23.576 canciones con un tamaño total del archivo de 2.5 GB. En la base de datos escogida existen una serie de subcarpetas a la hora de descargarse el archivo, las cuales en mi caso han sido mezcladas para crear una única carpeta con 23.576 canciones.
 
-4. append all the dataset, randomly split it into 8:1:1 (train, dev, test).
 
-5. train model 
 
- * 3 conv2d layers followed by average-pooling layer and lastly 2 fully-connected layers with dropout
+* Base de datos de música
 
- * adam optimiser, 64 mini batch_size
+Se ha escogido la base de datos [fma](https://github.com/mdeff/fma) debido a que es una de las fuentes de datos más conocidas a la hora de realizar proyectos con técnicas de Machine Learning y música. Esta base de datos se encuentra disponible en.  En este caso, al ser un trabajo de carácter exploratorio, se ha decidido hacer uso de una de las versiones intermedias, fma_medium, con 25.000 canciones de 30 segundos y un tamaño de 22 GB, de forma que sea coherente con magnitud de la fuente de datos de voz (23.576 canciones).
 
 </br>
 
-## Result
-
-**-training accuracy**
-
-![1](https://user-images.githubusercontent.com/40786348/46267570-ae88a580-c570-11e8-983f-e2dece209b18.PNG)
-
-**-training loss**
-
-![2](https://user-images.githubusercontent.com/40786348/46267575-b1839600-c570-11e8-81ee-bcb151f6e55c.PNG)
+## Desarrollo
 
 </br>
 
-**-validation accuracy**
+Tras la creación de la base de datos y haciendo uso de una arquitectura InceptionV3 para la red neuronal, se procede al entrenamiento para que la red sea capaz de extrapolar los ‘conocimientos’ necesarios para que el sistema pueda realizar predicciones correctas sobre el valor en decibelios de la diferencia de volumen entre música y voz. Un ejemplo del proceso general del sistema es el mostrado en la siguiente figura:
 
-![3](https://user-images.githubusercontent.com/40786348/46267576-b34d5980-c570-11e8-8fea-da47b3df3ccc.PNG)
+![2](/home/drb/code/Daniel-Rodriguez-Blazquez/figs/Captura de pantalla 2019-06-04 a las 16.19.34.png)
 
-**-validation loss**
-
-![4](https://user-images.githubusercontent.com/40786348/46267578-b5171d00-c570-11e8-90e8-525fb6bdf92c.PNG)
+A la salida del sistema y gracias a la función de activación softmax, se obtienen 10 valores junto con sus correspondientes probabilidades, generando como único valor de salida finalmente, el valor cuya probabilidad sea mayor (entre 1 y 10 dB).
 
 </br>
 
-**achieved around 0.71 accuracy with test set**
+# Pasos a seguir para la ejecución
+
+<br>
+
+Una vez descargadas y organizadas las bases de datos y los archivos disponibles en el repositorio, el proceso a seguir es el siguiente:
+
+\* Se procede a crear la base de datos de mel-espectrogramas -> ejecutar el script dataset_preprocess.py  
+
+\* Se lleva a cabo el entrenamiento -> ejecutar el script train.py
+
+\* Se lleva a cabo el test -> ejecutar el script test.py
 
 </br>
-
-## References
-
-Justin Salamon and Juan Pablo Bello, [Deep Convolutional Neural Networks and Data Augmentation for Environmental Sound Classification](https://arxiv.org/pdf/1608.04363.pdf), 2016
-
